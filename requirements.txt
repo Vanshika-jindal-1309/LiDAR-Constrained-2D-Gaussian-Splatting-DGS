@@ -1,0 +1,22 @@
+# Core ML
+torch>=2.0.0
+torchvision
+tqdm
+
+# 3D data processing
+open3d>=0.16.0
+plyfile
+laspy
+scipy
+scikit-learn
+
+# Image processing
+opencv-python
+Pillow
+
+# Geometry / mesh
+trimesh
+
+# Misc
+numpy
+matplotlib

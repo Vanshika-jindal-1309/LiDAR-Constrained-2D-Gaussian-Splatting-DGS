@@ -1,0 +1,22 @@
+output/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+build/
+dist/
+*.so
+.vscode/
+*.swp
+*.swo
+*.bak
+.DS_Store
+*.log
+wandb/
+runs/
+**/PKG-INFO
+**/tmp
+# Large data files — do not commit
+*.las
+data/
+models/
