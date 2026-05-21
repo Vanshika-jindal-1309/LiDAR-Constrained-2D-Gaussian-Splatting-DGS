@@ -32,7 +32,7 @@ An optional **ICP bridge** step corrects cm-level LiDAR↔camera registration er
 
 ```bash
 git clone --recursive <this-repo> && cd lidar-2dgs
-conda create -n surfel_splatting python=3.8 && conda activate surfel_splatting
+conda create -n dgs python=3.8 && conda activate dgs
 
 # PyTorch — adjust the index URL for your CUDA version
 pip install torch==2.4.1 torchvision --index-url https://download.pytorch.org/whl/cu124
@@ -86,7 +86,7 @@ python train.py \
 |------|---------|-------------|
 | `--lambda_depth` | 0.0 | L1 depth supervision weight |
 | `--lambda_lidar_normal` | 0.0 | Normal supervision weight |
-| `--lambda_dgs` | 0.0 | DGS surfel-to-plane distance weight |
+| `--lambda_dgs` | 0.0 | DGS -to-plane distance weight |
 | `--lambda_dgs_normal` | 0.5 | DGS normal alignment weight |
 | `--las_path` | — | LiDAR point cloud for DGS (.ply / .las) |
 | `--dgs_start_iter` | 10000 | Activate DGS after this iteration |
