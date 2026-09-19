@@ -30,7 +30,7 @@ Average over six evaluation scenes, evaluated against Faro reference:
 |--------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | Vanilla 2DGS | 0.399 | 0.431 | 0.381 | 15.92 | 0.797 | **23.88** | 0.897 |
 | DN-Splatter | 0.767 | 0.817 | 0.731 | 9.09 | 0.881 | 23.22 | **0.904** |
-| **DGS (Ours)** | **0.856** | **0.896** | **0.837** | **4.73** | **0.917** | 23.20 | 0.893 |
+| **DGS (Ours)** | **0.857** | **0.896** | **0.837** | **4.73** | **0.917** | 23.20 | 0.893 |
 
 ### Dense-LiDAR captures (AccP50 and Wall RMS in mm; Chamfer in cm)
 
