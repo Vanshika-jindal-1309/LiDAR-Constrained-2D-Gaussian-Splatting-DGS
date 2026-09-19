@@ -1,49 +1,66 @@
-# LiDAR-Constrained 2D Gaussian Splatting
+# Direct Geometric Supervision for 2D Gaussian Surfels
 
-Extending [2D Gaussian Splatting](https://github.com/hbb1/2d-gaussian-splatting) with **Direct Geometric Supervision (DGS)** and **Geometry-Tethered Refinement (GTR)** for mm-accurate indoor mesh reconstruction from LiDAR + RGB.
+Official implementation of **"Direct Geometric Supervision: World-Space LiDAR Anchoring for 2D Gaussian Surfels in Indoor Reconstruction"** (SIGGRAPH Asia 2026 Technical Communications).
 
-## Results
-
-**ScanNet++ iPhone indoor scenes** (F-score @ 5 cm, visibility-culled):
-
-| Scene | Vanilla 2DGS | Ours | Δ |
-|-------|:-----------:|:----:|:-:|
-| e8ea9b4da8 | 0.438 | **0.907** | +107 % |
-| 56a0ec536c | 0.491 | **0.845** | +72 % |
-| be0ed6b33c | 0.413 | **0.880** | +113 % |
-| 88cf747085 | 0.511 | **0.893** | +75 % |
-| **Average** | 0.463 | **0.881** | **+90 %** |
-
-Published baselines on ScanNet++: DN-Splatter ≈ 0.55–0.65 · PGSR ≈ 0.60–0.70 · 2DGS-Room ≈ 0.65–0.72.
-
-**Xgrids ARTLab indoor scene** (building-scale, 26 M LiDAR points, 1,992 images):
-
-| Metric | Photometric only | Depth supervised | + DGS | + GTR (final) |
-|--------|:---:|:---:|:---:|:---:|
-| Wall RMS (mm) | 14.46 | 9.79 | 8.70 | **8.29** |
-| Chamfer (mm) | 369.8 | 265.6 | 255.5 | **247.4** |
-| F@10 mm | 0.052 | 0.204 | 0.205 | **0.208** |
-| PSNR (dB) | — | 13.24 | 12.96 | **13.35** |
+Built on [2D Gaussian Splatting](https://github.com/hbb1/2d-gaussian-splatting) (Huang et al., SIGGRAPH 2024).
 
 ---
 
-## How It Works
+## Overview
 
-Training runs in three phases on top of vanilla 2DGS:
+We introduce **Direct Geometric Supervision (DGS)**, a world-space regularizer that anchors each surfel to a tangent plane fitted from its local LiDAR neighbourhood, and **Geometry-Tethered Refinement (GTR)** for appearance recovery while preserving geometric accuracy.
 
-| Phase | Iterations | What happens |
-|-------|-----------|--------------|
-| **Densification** | 0 – 15 k | Standard 2DGS + L1 depth supervision from LiDAR depth maps |
-| **DGS** | 10 k – 20 k | Per-surfel KNN plane fit to LiDAR; penalises signed distance and normal misalignment — gradient bypasses alpha-compositing dilution |
-| **GTR** | 20 k – 30 k | Position LR drops 160×; DGS acts as a spring tether (λ = 0.05); photometric loss provides a counter-spring — surfels settle ~0.5 mm from the LiDAR surface |
+Training runs in three stages:
+
+| Stage | Iterations | Description |
+|-------|-----------|-------------|
+| **Densification** | 0–10k | Standard 2DGS + LiDAR depth/normal supervision |
+| **DGS** | 10k–20k | Per-surfel KNN plane fit to LiDAR; penalises signed distance and normal misalignment |
+| **GTR** | 20k–30k | Position LR drops 160×; DGS acts as geometric tether (λ = 0.05) |
+
+---
+
+## Results
+
+### ScanNet++ (sparse iPhone LiDAR + high-quality RGB)
+
+Average over six evaluation scenes, evaluated against Faro reference:
+
+| Method | F@5 cm ↑ | Precision ↑ | Recall ↑ | Chamfer (cm) ↓ | NC ↑ | PSNR ↑ | SSIM ↑ |
+|--------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Vanilla 2DGS | 0.399 | 0.431 | 0.381 | 15.92 | 0.797 | **23.88** | 0.897 |
+| DN-Splatter | 0.767 | 0.817 | 0.731 | 9.09 | 0.881 | 23.22 | **0.904** |
+| **DGS (Ours)** | **0.856** | **0.896** | **0.837** | **4.73** | **0.917** | 23.20 | 0.893 |
+
+### Dense-LiDAR captures (AccP50 and Wall RMS in mm; Chamfer in cm)
+
+| Scene | Method | AccP50 ↓ | Wall RMS ↓ | Chamfer ↓ | NC ↑ |
+|-------|--------|:---:|:---:|:---:|:---:|
+| ARTLab | Vanilla 2DGS | 73.7 | 9.79 | 33.05 | 0.773 |
+| | DN-Splatter | **6.24** | 9.86 | 60.29 | 0.814 |
+| | **DGS (Ours)** | 6.25 | **8.29** | **24.74** | **0.830** |
+| m1 | Vanilla 2DGS | 34.4 | 13.52 | 7.04 | 0.830 |
+| | DN-Splatter | 5.9 | 12.16 | 3.54 | 0.866 |
+| | **DGS (Ours)** | **5.4** | **8.31** | **2.60** | **0.872** |
+| m2 | Vanilla 2DGS | 62.0 | 12.78 | 11.43 | 0.778 |
+| | DN-Splatter | 5.5 | 7.73 | 3.58 | 0.860 |
+| | **DGS (Ours)** | **5.0** | **7.33** | **2.82** | **0.873** |
+| m3 | Vanilla 2DGS | 69.6 | 13.92 | 12.15 | 0.813 |
+| | DN-Splatter | 39.2 | **6.02** | 33.71 | 0.766 |
+| | **DGS (Ours)** | **8.4** | 9.18 | **5.45** | **0.883** |
+| m4 | Vanilla 2DGS | 125.5 | 14.11 | 27.61 | 0.663 |
+| | DN-Splatter | 1214.9† | 4.77† | 99.99† | 0.640 |
+| | **DGS (Ours)** | **19.2** | **10.46** | **11.81** | **0.730** |
+
+† DN-Splatter diverged on m4 (degenerate mesh).
 
 ---
 
 ## Installation
 
 ```bash
-git clone --recursive https://github.com/<your-org>/LiDAR-Constrained-2DGS.git
-cd LiDAR-Constrained-2DGS
+git clone --recursive https://github.com/<your-org>/DGS-2DGS.git
+cd DGS-2DGS
 
 conda create -n dgs python=3.8 && conda activate dgs
 
@@ -64,8 +81,6 @@ pip install plyfile tqdm scipy opencv-python open3d trimesh scikit-learn laspy m
 
 ## Quick Start
 
-If you already have a scene directory in the [expected layout](#data-layout), the full pipeline is three commands:
-
 ```bash
 # 1. Train
 python train.py \
@@ -74,7 +89,7 @@ python train.py \
   --lambda_depth 0.5 --lambda_lidar_normal 0.5 \
   --lambda_dgs 0.1 --lambda_dgs_normal 0.1 \
   --dgs_start_iter 10000 --dgs_interval 500 --dgs_k 8 --dgs_radius 0.05 \
-  --las_path scene/pc_aligned_artlab_frame.ply \
+  --las_path scene/pc_aligned.ply \
   --soft_phase_b --phase_b_start 20000 \
   --phase_b_xyz_lr 1e-6 --phase_b_dgs_lambda 0.05 \
   --densify_until_iter 15000 --iterations 30000
@@ -108,14 +123,14 @@ scene/
 ├── images_masked/<subdir>/      # RGB frames (PNG with alpha mask, or plain PNG)
 ├── depth_maps/<subdir>/         # Per-frame .npy, float32, metres (0 = no data)
 ├── normal_maps/<subdir>/        # Per-frame .npy, float32, world-space normals
-└── pc_aligned_artlab_frame.ply  # Full-resolution LiDAR point cloud for DGS
+└── pc_aligned.ply               # Full-resolution LiDAR point cloud for DGS
 ```
 
 **Generating depth and normal maps** from a LiDAR point cloud:
 
 ```bash
 python scripts/lidar_to_depth_maps.py \
-  --las scene/pc_aligned_artlab_frame.ply \
+  --las scene/pc_aligned.ply \
   --source scene/ --voxel_size 0.002 --mask_folder images_masked
 ```
 
@@ -125,42 +140,18 @@ python scripts/lidar_to_depth_maps.py \
 
 ScanNet++ scenes require coordinate-frame alignment between the Faro scanner, the iPhone SLAM poses, and the GT evaluation mesh.
 
-### Step 1: Convert to COLMAP Format
-
-**iPhone captures** (used for all results in this paper):
+### Step 1: Convert to COLMAP format
 
 ```bash
-# Dense (stride=5, ~1267 frames) — recommended
+# iPhone captures (stride=5, ~1267 frames) — used for all paper results
 python scripts/scannetpp_iphone_to_artlab_format_dense.py \
   --scene_dir /path/to/scannetpp/data/<scene_id> \
   --output_dir /path/to/output/<scene_id>_iphone_dense
-
-# Sparse (stride=10, ~324 frames)
-python scripts/scannetpp_iphone_to_artlab_format.py \
-  --scene_dir /path/to/scannetpp/data/<scene_id> \
-  --output_dir /path/to/output/<scene_id>_iphone
 ```
 
-**DSLR captures** (different input format, uses `transforms_undistorted.json`):
+### Step 2: Coordinate frame alignment
 
-```bash
-python scripts/scannetpp_to_artlab_format.py \
-  --scene_dir /path/to/scannetpp/data/<scene_id> \
-  --output_dir /path/to/output/<scene_id>_dslr
-```
-
-### Step 2: Coordinate Frame Alignment
-
-The conversion scripts apply a **swap_XY_negY** rotation to bring iPhone inside-room poses into a consistent training frame:
-
-```python
-# x' = y,  y' = -x,  z' = z
-R = np.array([[0, 1, 0],
-              [-1, 0, 0],
-              [0, 0, 1]])
-```
-
-This is applied to camera poses and the LiDAR point cloud automatically. However, the **GT mesh for evaluation** must be rotated manually since it lives outside the conversion pipeline:
+The conversion scripts apply a rotation to bring iPhone poses into a consistent training frame. The **GT mesh for evaluation** must be rotated manually:
 
 ```python
 import trimesh, numpy as np
@@ -171,22 +162,11 @@ mesh.vertices = (R @ mesh.vertices.T).T
 mesh.export("gt_mesh_training_frame.ply")
 ```
 
-> **If you skip this**, the eval script will print `Bboxes overlap: NO` and F-score will be exactly 0.0000.
+> **If you skip this**, F-score will be exactly 0.0000.
 
-**Verify alignment:**
+### Step 3: ICP bridge (optional)
 
-```python
-import trimesh
-pred = trimesh.load("output/.../fuse_post.ply", process=False)
-gt = trimesh.load("gt_mesh_training_frame.ply", process=False)
-print(f"Pred Y: [{pred.bounds[0,1]:.2f}, {pred.bounds[1,1]:.2f}]")
-print(f"GT   Y: [{gt.bounds[0,1]:.2f}, {gt.bounds[1,1]:.2f}]")
-# These ranges should overlap substantially
-```
-
-### Step 3: ICP Bridge (Optional)
-
-Some ScanNet++ scenes have cm-level registration errors between the Faro scanner and iPhone SLAM. The ICP bridge corrects this using the iPhone's own LiDAR as an intermediary:
+Some ScanNet++ scenes have cm-level registration errors between the Faro scanner and iPhone SLAM. The ICP bridge corrects this:
 
 ```bash
 python scripts/faro_icp_bridge.py \
@@ -196,11 +176,11 @@ python scripts/faro_icp_bridge.py \
   --output_dir /path/to/corrected_output
 ```
 
-See [`docs/icp_bridge.md`](docs/icp_bridge.md) for details. Use this when initial F-scores are lower than expected (0.5–0.7 instead of 0.85+).
+Use this when initial F-scores are lower than expected (0.5–0.7 instead of 0.85+).
 
 ---
 
-## Training
+## Training Details
 
 ```bash
 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
@@ -210,7 +190,7 @@ python train.py \
   --lambda_depth 0.5 --lambda_lidar_normal 0.5 \
   --lambda_dgs 0.1 --lambda_dgs_normal 0.1 \
   --dgs_start_iter 10000 --dgs_interval 500 --dgs_k 8 --dgs_radius 0.05 \
-  --las_path scene/pc_aligned_artlab_frame.ply \
+  --las_path scene/pc_aligned.ply \
   --soft_phase_b --phase_b_start 20000 \
   --phase_b_xyz_lr 1e-6 --phase_b_dgs_lambda 0.05 \
   --densify_until_iter 15000 --iterations 30000
@@ -230,7 +210,6 @@ python train.py \
 | `--dgs_interval` | 500 | KNN cache refresh interval |
 | `--dgs_k` | 8 | Neighbours for plane fitting |
 | `--dgs_radius` | 0.05 | Max KNN radius (m) |
-| `--lambda_concentrate` | 0.0 | Opacity concentration (experimental — keep 0) |
 | `--soft_phase_b` | False | Enable GTR phase |
 | `--phase_b_start` | 20000 | GTR activation iteration |
 | `--phase_b_xyz_lr` | 1e-6 | Reduced position LR during GTR |
@@ -242,8 +221,8 @@ python train.py \
 
 | LiDAR source | `lambda_depth` | Reason |
 |-------------|:---:|--------|
-| Terrestrial scanner (Faro, Xgrids) | **3.0** | Sub-mm registration — strong anchoring is safe |
-| iPhone LiDAR (with or without ICP) | **0.5** | cm-level residual noise — lighter anchoring accommodates errors |
+| Terrestrial scanner (Faro, Xgrids K1) | **3.0** | Sub-mm registration — strong anchoring is safe |
+| iPhone LiDAR (with or without ICP) | **0.5** | cm-level residual noise — lighter anchoring |
 
 ---
 
@@ -256,9 +235,9 @@ python render.py \
   --mesh_res 512 --depth_trunc <ROOM_DIAMETER> --num_cluster 50
 ```
 
-Set `--depth_trunc` to roughly the room diameter in metres (e.g. 5.0 for a 3 × 4 m room, 10.0 for a large hall). Output: `output/my_model/train/ours_30000/fuse_post.ply`
+Set `--depth_trunc` to roughly the room diameter in metres (e.g. 5.0 for a 3×4 m room).
 
-**OOM with many cameras:** `render.py` loads all cameras into RAM for TSDF fusion. For scenes with > 350 cameras, create a sub-sampled source:
+**OOM with many cameras (>350):** create a sub-sampled source:
 
 ```bash
 python scripts/build_stub_source_from_cameras_json.py \
@@ -277,7 +256,6 @@ python render.py \
 ## Evaluation
 
 ```bash
-# F-score, Chamfer, Normal Consistency (visibility-culled)
 python scripts/eval_mesh_scannetpp.py \
   --pred_mesh output/.../fuse_post.ply \
   --gt_mesh /path/to/gt_mesh_training_frame.ply \
@@ -285,29 +263,22 @@ python scripts/eval_mesh_scannetpp.py \
   --camera_params scene/sparse/0/cameras.txt \
   --threshold 0.05 --clip_to_gt_bbox \
   --output output/.../eval_metrics.json
-
-# Patch-based spatial analysis
-python scripts/patch_eval.py \
-  --gt_mesh /path/to/gt_mesh_training_frame.ply \
-  --pred_mesh output/.../fuse_post.ply \
-  --output output/.../patch_eval/ \
-  --n_patches 100 --samples 200000 --clip_to_gt_bbox
 ```
 
-> **Important:** the GT mesh must be in the training coordinate frame. See [Coordinate Frame Alignment](#step-2-coordinate-frame-alignment).
+> The GT mesh must be in the training coordinate frame. See [Coordinate Frame Alignment](#step-2-coordinate-frame-alignment).
 
 ---
 
-## Troubleshooting for scannet++ Dataset
+## Troubleshooting
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| F-score = 0.000 | GT mesh not rotated to training frame | Apply `swap_XY_negY` rotation — see [Step 2](#step-2-coordinate-frame-alignment) |
-| F-score 0.3–0.5 (expected 0.85+) | LiDAR↔camera registration error | Run [ICP bridge](#step-3-icp-bridge-optional) and retrain |
-| OOM during `train.py` | Too many cameras on GPU | Set `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`; reduce `--densify_until_iter` to 10000 |
-| Killed during `render.py` | System RAM exhausted (> 350 cameras) | Use [stub source](#oom-with-many-cameras) |
-| Scene explodes (surfel→LiDAR > 100 mm) | DGS active during densification | Ensure `--dgs_start_iter` ≥ `--densify_until_iter` |
-| PSNR drops > 1 dB vs vanilla | Hard Phase B freeze | Use `--soft_phase_b` with `--phase_b_xyz_lr 1e-6` |
+| F-score = 0.000 | GT mesh not rotated to training frame | Apply rotation — see [Step 2](#step-2-coordinate-frame-alignment) |
+| F-score 0.3–0.5 (expected 0.85+) | LiDAR–camera registration error | Run [ICP bridge](#step-3-icp-bridge-optional) and retrain |
+| OOM during `train.py` | Too many cameras | Set `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` |
+| OOM during `render.py` | System RAM exhausted (>350 cameras) | Use [stub source](#mesh-extraction) |
+| Scene explodes | DGS active during densification | Ensure `--dgs_start_iter` ≥ `--densify_until_iter` |
+| PSNR drops >1 dB | Hard position freeze | Use `--soft_phase_b` with `--phase_b_xyz_lr 1e-6` |
 
 ---
 
@@ -317,58 +288,27 @@ python scripts/patch_eval.py \
 ├── train.py                          # Training (DGS + GTR integrated)
 ├── render.py                         # Rendering + TSDF mesh extraction
 ├── metrics.py                        # PSNR / SSIM / LPIPS evaluation
-│
-├── arguments/                        # CLI argument definitions
-├── gaussian_renderer/                # Differentiable surfel rasteriser interface
-├── scene/                            # Scene loading, cameras, Gaussian model
-├── lpipsPyTorch/                     # Perceptual loss (LPIPS)
-│
 ├── utils/
 │   ├── direct_geometric_supervision.py   # DGS: KNN plane fitting + loss
-│   ├── mesh_utils.py                     # TSDF extraction (GaussianExtractor)
-│   ├── loss_utils.py                     # L1, SSIM
-│   └── ...                               # Camera, graphics, SH utilities
-│
+│   ├── mesh_utils.py                     # TSDF extraction
+│   └── loss_utils.py                     # L1, SSIM
 ├── scripts/
 │   ├── lidar_to_depth_maps.py            # LiDAR → per-camera depth/normal maps
-│   ├── scannetpp_iphone_to_artlab_format_dense.py  # ScanNet++ iPhone → COLMAP
-│   ├── scannetpp_iphone_to_artlab_format.py        # ScanNet++ iPhone (sparse)
-│   ├── scannetpp_to_artlab_format.py               # ScanNet++ DSLR → COLMAP
+│   ├── scannetpp_iphone_to_artlab_format_dense.py  # ScanNet++ → COLMAP
 │   ├── faro_icp_bridge.py                # ICP registration correction
-│   ├── extract_iphone_depth_maps.py      # iPhone native depth extraction
 │   ├── eval_mesh_scannetpp.py            # F-score / Chamfer evaluation
 │   ├── patch_eval.py                     # Spatial patch-based analysis
-│   ├── wall_roughness_analysis.py        # RANSAC wall-plane roughness
-│   ├── build_stub_source_from_cameras_json.py  # Camera subsampling (OOM fix)
-│   ├── verify_lidar_camera_alignment.py  # LiDAR-camera overlay diagnostic
-│   ├── jpg_to_masked_png.py              # JPG → RGBA PNG (black border masking)
-│   └── las_to_ply.py                     # LAS/LAZ → PLY conversion
-│
-├── submodules/
-│   ├── diff-surfel-rasterization/        # 2DGS CUDA rasteriser
-│   └── simple-knn/                       # KNN for densification
-│
-└── docs/
-    └── icp_bridge.md                     # ICP bridge documentation
+│   └── wall_roughness_analysis.py        # RANSAC wall-plane roughness
+└── submodules/
+    ├── diff-surfel-rasterization/        # 2DGS CUDA rasteriser
+    └── simple-knn/                       # KNN for densification
 ```
 
 ---
 
-## Citation
-
-```bibtex
-@mastersthesis{jindal2026lidar2dgs,
-  title   = {LiDAR-Constrained 2D Gaussian Surfels with Direct Geometric
-             Supervision for Indoor Digital Twin Reconstruction},
-  author  = {Jindal, Vanshika},
-  school  = {Indian Institute of Science, Bengaluru},
-  year    = {2026},
-  type    = {M.Tech Thesis}
-}
-```
 
 ## Acknowledgements
 
 Built on [2D Gaussian Splatting](https://github.com/hbb1/2d-gaussian-splatting) (Huang et al., SIGGRAPH 2024). Evaluated on [ScanNet++](https://kaldir.vc.in.tum.de/scannetpp/) (Yeshwanth et al., ICCV 2023).
 
-This work was supported by the Ministry of Electronics and Information Technology (MeitY), Government of India; ARTLabs; and the Autonomous Machines Lab (AML), Indian Institute of Science, Bengaluru.
+This work was supported by the Ministry of Electronics and Information Technology (MeitY), Government of India; ARTPARK; and Qualcomm.
