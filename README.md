@@ -59,7 +59,7 @@ Average over six evaluation scenes, evaluated against Faro reference:
 ## Installation
 
 ```bash
-git clone --recursive https://github.com/<your-org>/DGS-2DGS.git
+git clone --recursive https://github.com/Vanshika-jindal-1309/LiDAR-Constrained-2D-Gaussian-Splatting-DGS.git
 cd DGS-2DGS
 
 conda create -n dgs python=3.8 && conda activate dgs
