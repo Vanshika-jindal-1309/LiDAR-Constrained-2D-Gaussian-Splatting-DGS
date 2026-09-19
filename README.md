@@ -1,6 +1,6 @@
 # Direct Geometric Supervision for 2D Gaussian Surfels
 
-Official implementation of **"Direct Geometric Supervision: World-Space LiDAR Anchoring for 2D Gaussian Surfels in Indoor Reconstruction"** (SIGGRAPH Asia 2026 Technical Communications).
+Official implementation of **"Direct Geometric Supervision: World-Space LiDAR Anchoring for 2D Gaussian Surfels in Indoor Reconstruction"**.
 
 Built on [2D Gaussian Splatting](https://github.com/hbb1/2d-gaussian-splatting) (Huang et al., SIGGRAPH 2024).
 
